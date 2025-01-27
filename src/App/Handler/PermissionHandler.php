@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Handler;
 
-use App\Provider\TokenDataProvider;
+use App\Service\PermissionService;
 use ProgPhil1337\SimpleReactApp\HTTP\Response\JSONResponse;
 use ProgPhil1337\SimpleReactApp\HTTP\Response\ResponseInterface;
 use ProgPhil1337\SimpleReactApp\HTTP\Routing\Attribute\Route;
@@ -19,42 +19,19 @@ class PermissionHandler implements HandlerInterface
     /**
      * Dependency Injection would be available here
      */
-    public function __construct()
+    public function __construct(private PermissionService $permissionService)
     {
 
     }
 
     public function __invoke(ServerRequestInterface $serverRequest, RouteParameters $parameters): ResponseInterface
     {
-        $np = "read";
-
         $tId = $parameters->get("token", "kein_token");
 
-        if ($tId != "kein_token") {
-            $dataProvider = new TokenDataProvider();
+        $response = $this->permissionService->checkPermission($tId);
 
-            $tokens = $dataProvider->getTokens();
-            $token = null;
+        $code = $response->hasPermission() ? 200 : 401;
 
-            foreach ($tokens as $t) {
-                if ($t["token"] == $tId) {
-                    $token = $t;
-                }
-            }
-
-            foreach ($token["permissions"] as $p) {
-                if ($p == $np) {
-                    $a = $a + 1;
-                }
-            }
-
-            if ($a > 0) {
-                return new JSONResponse(array("permission" => true), 400);
-            } else {
-                return new JSONResponse(array('permission' => false), 400);
-            }
-        } else {
-            return new JSONResponse(array("permission" => false), 400);
-        }
+        return new JSONResponse(["permission" => $response->hasPermission()], $code);
     }
 }
