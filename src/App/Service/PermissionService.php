@@ -9,7 +9,6 @@ use App\Provider\TokenDataProvider;
 
 class PermissionService
 {
-    public const NO_TOKEN = "kein_token";
     public const PERMISSION_READ = "read";
 
     public function __construct(private TokenDataProvider $tokenDataProvider)
@@ -19,23 +18,12 @@ class PermissionService
 
     public function checkPermission(string $tokenId): PermissionCheckResponseModel
     {
-        if ($tokenId === self::NO_TOKEN) {
-            return new PermissionCheckResponseModel(false);
-        }
+        $foundToken = $this->findTokenById($this->tokenDataProvider->getTokens(), $tokenId);
 
-        $tokens = $this->tokenDataProvider->getTokens();
-
-        $foundToken = $this->findTokenById($tokens, $tokenId);
-
-        if (!$foundToken) {
-            return new PermissionCheckResponseModel(false);
-        }
-
-        if ($this->readPermissionExists($foundToken)) {
-            return new PermissionCheckResponseModel(true);
-        }
-
-        return new PermissionCheckResponseModel(false);
+        return new PermissionCheckResponseModel(
+            $foundToken &&
+            $this->readPermissionExists($foundToken)
+        );
     }
 
     private function findTokenById(array $tokens, string $tokenId): ?array
